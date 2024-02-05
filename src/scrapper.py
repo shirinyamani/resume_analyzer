@@ -1,10 +1,11 @@
-import user
+from user import User
 import time
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 import warnings
 import pandas as pd
+import numpy as np
 
 warnings.filterwarnings('ignore')
 
@@ -26,52 +27,73 @@ class Scrapper:
 
     @staticmethod
     def company_name(driver):
-        company = driver.find_elements(by=By.CSS_SELECTOR, value='a[class="job-search-card__subtitle-link"]')
-        company_name = [i.text for i in company]
+        company = driver.find_elements(by=By.CSS_SELECTOR, value='h4[class="base-search-card__subtitle"]')
+        company_name = []
+        for i in company:
+            company_name.append(i.text)
         return company_name
     
     @staticmethod
     def company_location(driver):
         location = driver.find_elements(by=By.CSS_SELECTOR, value='span[class="job-search-card__location"]')
-        company_location = [i.text for i in location]
+        company_location = []
+        for i in location:
+            company_location.append(i.text)
         return company_location
 
     @staticmethod
     def job_title(driver):
         title = driver.find_elements(by=By.CSS_SELECTOR, value='h3[class="base-search-card__title"]')
-        job_title = [i.text for i in title]
+        job_title = []
+        for i in title:
+            job_title.append(i.text)
         return job_title
 
     @staticmethod
     def job_url(driver):
         url = driver.find_elements(by=By.XPATH, value='//a[contains(@href, "/jobs/")]')
-        job_url = [i.get_attribute('href') for i in url]
+        url_list = [i.get_attribute('href') for i in url]
+        job_url = []
+        for url in url_list:
+                job_url.append(url)
         return job_url
-    
+
+        
     @staticmethod
-    def job_detail_dataframe(driver):
-        company_names = Scrapper.company_name(driver)
-        company_locations = Scrapper.company_location(driver)
-        job_titles = Scrapper.job_title(driver)
-        job_urls = Scrapper.job_url(driver)
+    def df_jobs_data(driver):
+        company_name = Scrapper.company_name(driver)
 
-        # Choose any list as the reference for the index
-        index_length = len(company_names)
+        company_location = Scrapper.company_location(driver)
+      
+        job_title = Scrapper.job_title(driver)
+    
+        job_url = Scrapper.job_url(driver)
+      
+        min_length = min(len(company_name), len(company_location), len(job_title), len(job_url))
+        index = range(1, min_length + 1)
+        jobs_data = pd.DataFrame(
+            {'Company Name': company_name,
+            'Company Location': company_location,
+            'Job Title': job_title,
+            'Job URL': job_url
+            }, index=index)
+        # Use range to create an index of the same length
+        
 
-        df = pd.DataFrame({
-            'Company Name': company_names,
-            'Company Location': company_locations,
-            'Job Title': job_titles,
-            'Job URL': job_urls
-        }, index=range(index_length))
-        return df
+        print(jobs_data)
+        return jobs_data
+        
+        
+
 
 if __name__ == "__main__":
-    job_list = user.User.ask_job_keyword()
+    user = User()
 
-    if user.User.verify_jobs():
-        final_title = user.User.convert_to_right(job_list)
-        search_link = user.User.link(final_title)
+    job_list = user.ask_job_keyword()
+
+    if User.verify_jobs():
+        final_title = user.convert_to_right(job_list)
+        search_link = user.link(final_title)
 
         # Create the WebDriver instance outside the class
         driver = webdriver.Chrome()
@@ -80,9 +102,9 @@ if __name__ == "__main__":
         scrapper = Scrapper()
         Scrapper.open_browser_and_navigate(driver, search_link)
 
-        # Assuming 'driver' is the WebDriver instance you created
-        results_df = Scrapper.job_detail_dataframe(driver)
-        print(results_df)
+        # Get all jobs data
+        all_jobs_data = Scrapper.df_jobs_data(driver)
+        print(all_jobs_data)
 
         # Close the browser window when done
         driver.quit()

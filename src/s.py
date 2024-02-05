@@ -1,55 +1,90 @@
-import user
 import time
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
-import warnings
 import pandas as pd
 import numpy as np
 
-warnings.filterwarnings('ignore')
 
-class Scrapper:
 
-    @staticmethod
-    def open_browser_and_navigate(driver, link):
-        driver.maximize_window()
+    
+
+
+class linkedin_scrap:
+
+    def linkedin_open_scrolldown(driver, user_job_title):
+
+        b = []
+        for i in user_job_title:
+            x = i.split()
+            y = '%20'.join(x)
+            b.append(y)
+        job_title = '%2C%20'.join(b)
+
+        link = f"https://in.linkedin.com/jobs/search?keywords={job_title}&location=India&locationId=&geoId=102713980&f_TPR=r604800&position=1&pageNum=0"
+
         driver.get(link)
         driver.implicitly_wait(10)
-        for _ in range(0, 2):
+
+        for i in range(0,3):
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             time.sleep(5)
-        try:
-            driver.find_element(by=By.CSS_SELECTOR, value="button[aria-label='See more jobs']").click()
-            time.sleep(3)
-        except:
-            pass
+            try:
+                x = driver.find_element(by=By.CSS_SELECTOR, value="button[aria-label='See more jobs']").click()
+                time.sleep(3)
+            except:
+                pass
 
-    @staticmethod
+
     def company_name(driver):
-        company = driver.find_elements(by=By.CSS_SELECTOR, value='a[class="job-search-card__subtitle-link"]')
-        company_name = [i.text for i in company]
-        return company_name
-    
-    @staticmethod
-    def company_location(driver):
-        location = driver.find_elements(by=By.CSS_SELECTOR, value='span[class="job-search-card__location"]')
-        company_location = [i.text for i in location]
-        return company_location
 
-    @staticmethod
+        company = driver.find_elements(by=By.CSS_SELECTOR, value='h4[class="base-search-card__subtitle"]')
+
+        company_name = []
+
+        for i in company:
+            company_name.append(i.text)
+
+        return company_name
+
+
+    def company_location(driver):
+        
+        location = driver.find_elements(by=By.CSS_SELECTOR, value='span[class="job-search-card__location"]')
+
+        company_location = []
+
+        for i in location:
+            company_location.append(i.text)
+        
+        return company_location
+    
+
     def job_title(driver):
+                
         title = driver.find_elements(by=By.CSS_SELECTOR, value='h3[class="base-search-card__title"]')
-        job_title = [i.text for i in title]
+
+        job_title = []
+        
+        for i in title:
+            job_title.append(i.text)
+        
         return job_title
 
-    @staticmethod
+
     def job_url(driver):
+
         url = driver.find_elements(by=By.XPATH, value='//a[contains(@href, "/jobs/")]')
-        job_url = [i.get_attribute('href') for i in url]
+        
+        url_list = [i.get_attribute('href') for i in url]
+        
+        job_url = []
+        
+        for url in url_list:
+                job_url.append(url)
+        
         return job_url
-    
-    @staticmethod
+
+
     def job_title_filter(x, user_job_title):
 
         s = [i.lower() for i in user_job_title]
@@ -63,7 +98,7 @@ class Scrapper:
         intersection = list(set(suggestion).intersection(set(a)))
         return x if len(intersection) > 1 else np.nan
 
-    @staticmethod
+
     def get_description(driver, link):
 
         driver.get(link)
@@ -80,17 +115,17 @@ class Scrapper:
         for j in description:
             return j.text
 
-    @staticmethod
+
     def data_scrap(driver, user_job_title):
 
         # combine the all data to single dataframe
-        df = pd.DataFrame(Scrapper.company_name(driver), columns=['Company Name'])
-        df['Job Title'] = pd.DataFrame(Scrapper.job_title(driver))
-        df['Location'] = pd.DataFrame(Scrapper.company_location(driver))
-        df['Website URL'] = pd.DataFrame(Scrapper.job_url(driver))
+        df = pd.DataFrame(linkedin_scrap.company_name(driver), columns=['Company Name'])
+        df['Job Title'] = pd.DataFrame(linkedin_scrap.job_title(driver))
+        df['Location'] = pd.DataFrame(linkedin_scrap.company_location(driver))
+        df['Website URL'] = pd.DataFrame(linkedin_scrap.job_url(driver))
 
         # job title filter based on user input
-        df['Job Title'] = df['Job Title'].apply(lambda x: Scrapper.job_title_filter(x, user_job_title))
+        df['Job Title'] = df['Job Title'].apply(lambda x: linkedin_scrap.job_title_filter(x, user_job_title))
         df = df.dropna()
         df.reset_index(drop=True, inplace=True)
         df = df.iloc[:10, :]
@@ -103,7 +138,7 @@ class Scrapper:
 
         for i in range(0, len(website_url)):
             link = website_url[i]
-            data = Scrapper.get_description(driver, link)
+            data = linkedin_scrap.get_description(driver, link)
             if data is not None and len(data.strip()) > 0:
                 job_description.append(data)
             else:
@@ -114,33 +149,15 @@ class Scrapper:
         df.reset_index(drop=True, inplace=True)
         return df
 
-
-
-
-
-
-
-
 if __name__ == "__main__":
-    job_list = user.User.ask_job_keyword()
+        user_job_title = ['Data Analyst', 'Data Scientist']
 
-    if user.User.verify_jobs():
-        final_title = user.User.convert_to_right(job_list)
-        search_link = user.User.link(final_title)
-
-        # Create the WebDriver instance outside the class
         driver = webdriver.Chrome()
+        driver.maximize_window()
 
-        # Now let's use the Scrapper class
-        scrapper = Scrapper()
-        Scrapper.open_browser_and_navigate(driver, search_link)
+        linkedin_scrap.linkedin_open_scrolldown(driver, user_job_title)
 
-        # Assuming 'driver' is the WebDriver instance you created
-        results_df = Scrapper.data_scrap(driver, job_list)
-        print(results_df)
-
-        # Close the browser window when done
+        final_df = linkedin_scrap.data_scrap(driver, user_job_title)
         driver.quit()
-    else:
-        print('Please enter the job keywords again.')
 
+        print(final_df)
