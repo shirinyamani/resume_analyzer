@@ -49,22 +49,22 @@ class Scrapper:
         return job_url
     
     @staticmethod
-    def data_scrap(driver):
-        # combine the all data to single dataframe
-        df = pd.DataFrame(Scrapper.company_name(driver), columns=['Company Name'])
-        df['Job Title'] = pd.DataFrame(Scrapper.job_title(driver))
-        df['Location'] = pd.DataFrame(Scrapper.company_location(driver))
-        df['Website URL'] = pd.DataFrame(Scrapper.job_url(driver))
+    def job_detail_dataframe(driver):
+        company_names = Scrapper.company_name(driver)
+        company_locations = Scrapper.company_location(driver)
+        job_titles = Scrapper.job_title(driver)
+        job_urls = Scrapper.job_url(driver)
 
+        # Choose any list as the reference for the index
+        index_length = len(company_names)
 
-      
+        df = pd.DataFrame({
+            'Company Name': company_names,
+            'Company Location': company_locations,
+            'Job Title': job_titles,
+            'Job URL': job_urls
+        }, index=range(index_length))
         return df
-
-
-
-
-
-
 
 if __name__ == "__main__":
     job_list = user.User.ask_job_keyword()
@@ -81,11 +81,10 @@ if __name__ == "__main__":
         Scrapper.open_browser_and_navigate(driver, search_link)
 
         # Assuming 'driver' is the WebDriver instance you created
-        results_df = Scrapper.data_scrap(driver)
+        results_df = Scrapper.job_detail_dataframe(driver)
         print(results_df)
 
         # Close the browser window when done
         driver.quit()
     else:
         print('Please enter the job keywords again.')
-
