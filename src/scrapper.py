@@ -100,10 +100,10 @@ if __name__ == "__main__":
 
         # Now let's use the Scrapper class
         scrapper = Scrapper()
-        Scrapper.open_browser_and_navigate(driver, search_link)
+        scrapper.open_browser_and_navigate(driver, search_link)
 
         # Get all jobs data
-        all_jobs_data = Scrapper.df_jobs_data(driver)
+        all_jobs_data = scrapper.df_jobs_data(driver)
         print(all_jobs_data)
 
         # Close the browser window when done

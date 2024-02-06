@@ -49,75 +49,7 @@ class Scrapper:
         job_url = [i.get_attribute('href') for i in url]
         return job_url
     
-    @staticmethod
-    def job_title_filter(x, user_job_title):
-
-        s = [i.lower() for i in user_job_title]
-        suggestion = []
-        for i in s:
-            suggestion.extend(i.split())
-
-        s = x.split()
-        a = [i.lower() for i in s]
-
-        intersection = list(set(suggestion).intersection(set(a)))
-        return x if len(intersection) > 1 else np.nan
-
-    @staticmethod
-    def get_description(driver, link):
-
-        driver.get(link)
-        time.sleep(3)
-
-        driver.find_element(by=By.CSS_SELECTOR, 
-                            value='button[data-tracking-control-name="public_jobs_show-more-html-btn"]').click()
-        time.sleep(2)
-
-        description = driver.find_elements(by=By.CSS_SELECTOR, 
-                                           value='div[class="show-more-less-html__markup relative overflow-hidden"]')
-        driver.implicitly_wait(4)
-        
-        for j in description:
-            return j.text
-
-    @staticmethod
-    def data_scrap(driver, user_job_title):
-
-        # combine the all data to single dataframe
-        df = pd.DataFrame(Scrapper.company_name(driver), columns=['Company Name'])
-        df['Job Title'] = pd.DataFrame(Scrapper.job_title(driver))
-        df['Location'] = pd.DataFrame(Scrapper.company_location(driver))
-        df['Website URL'] = pd.DataFrame(Scrapper.job_url(driver))
-
-        # job title filter based on user input
-        df['Job Title'] = df['Job Title'].apply(lambda x: Scrapper.job_title_filter(x, user_job_title))
-        df = df.dropna()
-        df.reset_index(drop=True, inplace=True)
-        df = df.iloc[:10, :]
-
-        # make a list after filter
-        website_url = df['Website URL'].tolist()
-
-        # add job description in df
-        job_description = []
-
-        for i in range(0, len(website_url)):
-            link = website_url[i]
-            data = Scrapper.get_description(driver, link)
-            if data is not None and len(data.strip()) > 0:
-                job_description.append(data)
-            else:
-                job_description.append('Description Not Available')
-
-        df['Job Description'] = pd.DataFrame(job_description, columns=['Description'])
-        df = df.dropna()
-        df.reset_index(drop=True, inplace=True)
-        return df
-
-
-
-
-
+    
 
 
 
